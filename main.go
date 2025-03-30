@@ -232,6 +232,23 @@ func matchmakingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// corsMiddleware はCORSのためのヘッダーを追加するミドルウェアです。
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 必要なヘッダーを設定
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// preflightリクエストの場合はここで終了
+		if r.Method == "OPTIONS" {
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	// DB初期化
 	if err := initDB(); err != nil {
@@ -247,7 +264,9 @@ func main() {
 	// マッチングプロセッサーを別ゴルーチンで起動
 	go matchmakingProcessor()
 
-	http.HandleFunc("/matchmaking", matchmakingHandler)
+	// ハンドラにCORSミドルウェアを適用
+	http.Handle("/matchmaking", corsMiddleware(http.HandlerFunc(matchmakingHandler)))
+	
 	log.Println("Matchmaking service running on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
