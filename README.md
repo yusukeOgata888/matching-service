@@ -10,8 +10,13 @@ go mod tidy
 ```
 
 # setting mysql
+## start
 ```
 docker-compose up -d
+```
+## stop
+```
+docker-compose stop mysql
 ```
 
 # running application
